@@ -90,7 +90,6 @@ PrivateKey                             sql=private_key
 TxMeta
     txMetaTxId         TxId         sql=tx_id
     txMetaWalletId     W.WalletId   sql=wallet_id
-    txMetaStatus       W.TxStatus   sql=status
     txMetaDirection    W.Direction  sql=direction
     txMetaSlot         SlotNo       sql=slot
     txMetaBlockHeight  Word32       sql=block_height
@@ -100,7 +99,26 @@ TxMeta
     Foreign Wallet fk_wallet_tx_meta txMetaWalletId ! ON DELETE CASCADE
     deriving Show Generic
 
--- A transaction input associated with TxMeta.
+-- Metadata for a transaction which has been submitted but has
+-- not yet appeared in a stable block of the ledger.
+--
+-- A transaction is removed from the wallet pending set once
+-- it appears in the ledger -- i.e. txPendingAccepted is not
+-- Nothing. However, it is not removed from this table until
+-- it can never be rolled back.
+TxPending
+    txPendingTxId          TxId            sql=tx_id
+    txPendingWalletId      W.WalletId      sql=wallet_id
+    txPendingAmount        Natural         sql=amount
+    txPendingSlotCreated   W.SlotId        sql=slot_created
+    txPendingSlotExpires   W.SlotId        sql=slot_expires
+    txPendingSlotAccepted  W.SlotId Maybe  sql=slot_accepted
+
+    Primary txPendingTxId txPendingWalletId
+    Foreign Wallet fk_wallet_pending_tx txPendingWalletId ! ON DELETE CASCADE
+    deriving Show Generic
+
+-- A transaction input associated with TxMeta or TxPending.
 --
 -- There is no wallet ID because these values depend only on the transaction,
 -- not the wallet. txInputTxId is referred to by TxMeta
@@ -114,7 +132,7 @@ TxIn
     Primary txInputTxId txInputSourceTxId txInputSourceIndex
     deriving Show Generic
 
--- A transaction output associated with TxMeta.
+-- A transaction output associated with TxMeta or TxPending.
 --
 -- There is no wallet ID because these values depend only on the transaction,
 -- not the wallet. txOutputTxId is referred to by TxMeta

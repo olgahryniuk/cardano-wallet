@@ -65,6 +65,7 @@ import Cardano.Wallet.Primitive.Types
     , Direction (..)
     , Dom (..)
     , GenesisParameters (..)
+    , PendingTx (..)
     , Tx (..)
     , TxIn (..)
     , TxMeta (..)
@@ -286,14 +287,17 @@ applyBlocks (block0 :| blocks) cp =
 -------------------------------------------------------------------------------}
 
 -- | Available balance = 'balance' . 'availableUTxO'
-availableBalance :: Set Tx -> Wallet s -> Natural
+--
+-- fixme: not sure whether to "infect" this module with PendingTx.
+-- Maybe better to extract 'pendingTx' before calling these functions.
+availableBalance :: Set PendingTx -> Wallet s -> Natural
 availableBalance pending =
     balance . availableUTxO pending
 
 -- | Total balance = 'balance' . 'totalUTxO' +? rewards
 totalBalance
     :: (IsOurs s Address, IsOurs s ChimericAccount)
-    => Set Tx
+    => Set Pending Tx
     -> Quantity "lovelace" Natural
     -> Wallet s
     -> Natural
@@ -311,16 +315,16 @@ totalBalance pending (Quantity rewards) wallet@(Wallet _ _ s _) =
 
 -- | Available UTxO = @pending ⋪ utxo@
 availableUTxO
-    :: Set Tx
+    :: Set PendingTx
     -> Wallet s
     -> UTxO
 availableUTxO pending (Wallet u _ _ _) =
-    u  `excluding` txIns pending
+    u  `excluding` txIns (Set.map pendingTx pending)
 
 -- | Total UTxO = 'availableUTxO' @<>@ 'changeUTxO'
 totalUTxO
     :: IsOurs s Address
-    => Set Tx
+    => Set PendingTx
     -> Wallet s
     -> UTxO
 totalUTxO pending wallet@(Wallet _ _ s _) =
@@ -423,11 +427,11 @@ prefilterBlock b u0 = runState $ do
 -- therefore use in a read-only mode here.
 changeUTxO
     :: IsOurs s Address
-    => Set Tx
+    => Set PendingTx
     -> s
     -> UTxO
 changeUTxO pending = evalState $
-    mconcat <$> mapM (state . utxoOurs) (Set.toList pending)
+    mconcat <$> mapM (state . utxoOurs . pendingTx) (Set.toList pending)
 
 -- | Construct our _next_ UTxO (possible empty) from a transaction by selecting
 -- outputs that are ours. It is important for the transaction outputs to be

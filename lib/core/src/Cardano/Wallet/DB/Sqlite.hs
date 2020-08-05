@@ -1096,6 +1096,7 @@ mkTxMetaEntity wid txid meta = TxMeta
     , txMetaSlot = meta ^. #slotNo
     , txMetaBlockHeight = getQuantity (meta ^. #blockHeight)
     , txMetaAmount = getQuantity (meta ^. #amount)
+    , txMetaSlotExpires = meta ^. #expiry
     }
 
 -- note: TxIn records must already be sorted by order
@@ -1156,6 +1157,7 @@ txHistoryFromEntity ti tip metas ins outs ws =
         , W.slotNo = txMetaSlot m
         , W.blockHeight = Quantity (txMetaBlockHeight m)
         , W.amount = Quantity (txMetaAmount m)
+        , W.expiry = txMetaSlotExpires m
         }
 
 mkProtocolParametersEntity

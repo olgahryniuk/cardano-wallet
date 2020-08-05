@@ -1731,6 +1731,7 @@ mkTxMeta interpretTime blockHeader wState tx cs =
                 , slotNo = blockHeader ^. #slotNo
                 , blockHeight = blockHeader ^. #blockHeight
                 , amount = Quantity $ distance amtInps amtOuts
+                , expiry = Just (error "fixme: expiry slot")
                 }
             )
   where

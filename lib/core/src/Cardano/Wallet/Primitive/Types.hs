@@ -881,15 +881,17 @@ data TxMeta = TxMeta
     , slotNo :: !SlotNo
     , blockHeight :: !(Quantity "block" Word32)
     , amount :: !(Quantity "lovelace" Natural)
+    , expiry :: !(Maybe SlotNo)
     } deriving (Show, Eq, Ord, Generic)
 
 instance NFData TxMeta
 
 instance Buildable TxMeta where
-    build (TxMeta s d sl (Quantity bh) (Quantity a)) = mempty
+    build (TxMeta s d sl (Quantity bh) (Quantity a) mex) = mempty
         <> (case d of; Incoming -> "+"; Outgoing -> "-")
         <> fixedF @Double 6 (fromIntegral a / 1e6)
         <> " " <> build s
+        <> maybe mempty (\ex -> " expires " <> build ex) mex
         <> " since " <> build sl <> "#" <> build bh
 
 data TxStatus

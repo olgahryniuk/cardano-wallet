@@ -289,7 +289,6 @@ import Cardano.Wallet.Primitive.Types
     , IsDelegatingTo (..)
     , NetworkParameters (..)
     , PassphraseScheme (..)
-    , PendingTx
     , PoolId (..)
     , PoolLifeCycleStatus (..)
     , ProtocolParameters (..)
@@ -314,7 +313,6 @@ import Cardano.Wallet.Primitive.Types
     , distance
     , dlgCertPoolId
     , fromTransactionInfo
-    , fromTransactionInfoPending
     , log10
     , wholeRange
     , withdrawals
@@ -643,13 +641,13 @@ readWallet
     :: forall ctx s k. HasDBLayer s k ctx
     => ctx
     -> WalletId
-    -> ExceptT ErrNoSuchWallet IO (Wallet s, WalletMetadata, Set PendingTx)
+    -> ExceptT ErrNoSuchWallet IO (Wallet s, WalletMetadata, Set Tx)
 readWallet ctx wid = db & \DBLayer{..} -> mapExceptT atomically $ do
     let pk = PrimaryKey wid
     cp <- withNoSuchWallet wid $ readCheckpoint pk
     meta <- withNoSuchWallet wid $ readWalletMeta pk
     pending <- lift $ readTxHistory pk Nothing Descending wholeRange (Just Pending)
-    pure (cp, meta, Set.fromList (fromTransactionInfoPending <$> pending))
+    pure (cp, meta, Set.fromList (fromTransactionInfo <$> pending))
   where
     db = ctx ^. dbLayer @s @k
 

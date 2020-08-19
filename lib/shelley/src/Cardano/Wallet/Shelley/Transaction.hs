@@ -218,7 +218,7 @@ newTransactionLayer
     -> TransactionLayer t k
 newTransactionLayer networkId = TransactionLayer
     { mkStdTx = \acc ks tip ->
-        mkTx networkId emptyTxPayload (defaultTTL tip) acc ks
+        mkTx networkId emptyTxPayload tip acc ks
     , initDelegationSelection = _initDelegationSelection
     , mkDelegationJoinTx = _mkDelegationJoinTx
     , mkDelegationQuitTx = _mkDelegationQuitTx

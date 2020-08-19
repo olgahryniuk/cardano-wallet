@@ -755,6 +755,13 @@ newDBLayer trace defaultFieldValues mDatabaseFile timeInterpreter = do
                 , (TxMetaStatus ==.) <$> status
                 ]
 
+        , updatePendingTx = \(PrimaryKey wid) tip -> ExceptT $ do
+            selectWallet wid >>= \case
+                Nothing -> pure $ Left $ ErrNoSuchWallet wid
+                Just _ -> do
+                  updatePendingTxQuery wid tip
+                  pure $ Right ()
+
         , removePendingTx = \(PrimaryKey wid) tid -> ExceptT $ do
             let errNoSuchWallet =
                     Left $ ErrRemovePendingTxNoSuchWallet $ ErrNoSuchWallet wid
@@ -1425,6 +1432,21 @@ deletePendingTx
     -> SqlPersistT IO ()
 deletePendingTx wid tid = deleteWhere
     [TxMetaWalletId ==. wid, TxMetaTxId ==. tid, TxMetaStatus ==. W.Pending ]
+
+-- Mutates all pending transaction entries which have exceeded their TTL so that
+-- their status becomes expired. Transaction expiry is not something which can
+-- be rolled back.
+updatePendingTxQuery
+    :: W.WalletId
+    -> W.SlotNo
+    -> SqlPersistT IO ()
+updatePendingTxQuery wid tip =
+    updateWhere isExpired [TxMetaStatus =. W.Expired]
+  where
+    isExpired =
+        [ TxMetaWalletId ==. wid
+        , TxMetaStatus ==. W.Pending
+        , TxMetaSlotExpires >=. Just tip ]
 
 selectPrivateKey
     :: (MonadIO m, PersistPrivateKey (k 'RootK))

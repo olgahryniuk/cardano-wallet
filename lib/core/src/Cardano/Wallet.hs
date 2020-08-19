@@ -828,6 +828,7 @@ restoreBlocks ctx wid blocks nodeTip = db & \DBLayer{..} -> mapExceptT atomicall
     let k = gp ^. #getEpochStability
     let localTip = currentTip $ NE.last cps
 
+    updatePendingTx (PrimaryKey wid) localTip
     putTxHistory (PrimaryKey wid) txs
     forM_ slotPoolDelegations $ \delegation@(slotNo, cert) -> do
         liftIO $ logDelegation delegation
@@ -1589,13 +1590,6 @@ signTx ctx wid pwd (UnsignedTx inpsNE outsNE) = db & \DBLayer{..} -> do
     inps = NE.toList inpsNE
     outs = NE.toList outsNE
 
--- NOTE: The (+7200) was selected arbitrarily when we were trying to get
--- this working on the FF testnet. Perhaps a better motivated and/or
--- configurable value would be better.
--- fixme: TTL in seconds
-defaultTTL :: Natural
-defaultTTL = 7200
-
 -- | Makes a fully-resolved coin selection for the given set of payments.
 selectCoinsExternal
     :: forall ctx s t k e.
@@ -1794,7 +1788,8 @@ submitExternalTx ctx bytes = do
     nw = ctx ^. networkLayer @t
     tl = ctx ^. transactionLayer @t @k
 
--- | Forget pending transaction.
+-- | Forget pending transaction. This happens at the request of the user and
+-- will remove the transaction from the history.
 forgetPendingTx
     :: forall ctx s k.
         ( HasDBLayer s k ctx

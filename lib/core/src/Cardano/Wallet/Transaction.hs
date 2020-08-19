@@ -57,7 +57,7 @@ data TransactionLayer t k = TransactionLayer
         -> CoinSelection
             -- A balanced coin selection where all change addresses have been
             -- assigned.
-        -> Either ErrMkTx (Tx, SealedTx)
+        -> Either ErrMkTx (Tx, SealedTx, SlotNo)
         -- ^ Construct a standard transaction
         --
         -- " Standard " here refers to the fact that we do not deal with redemption,
@@ -78,7 +78,7 @@ data TransactionLayer t k = TransactionLayer
         -> CoinSelection
             -- A balanced coin selection where all change addresses have been
             -- assigned.
-        -> Either ErrMkTx (Tx, SealedTx)
+        -> Either ErrMkTx (Tx, SealedTx, SlotNo)
         -- ^ Construct a transaction containing a certificate for delegating to
         -- a stake pool.
         --
@@ -96,7 +96,7 @@ data TransactionLayer t k = TransactionLayer
         -> CoinSelection
             -- A balanced coin selection where all change addresses have been
             -- assigned.
-        -> Either ErrMkTx (Tx, SealedTx)
+        -> Either ErrMkTx (Tx, SealedTx, SlotNo)
         -- ^ Construct a transaction containing a certificate for quiting from
         -- a stake pool.
         --

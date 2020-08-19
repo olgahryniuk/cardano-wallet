@@ -1574,7 +1574,7 @@ signTx ctx wid pwd (UnsignedTx inpsNE outsNE) = db & \DBLayer{..} -> do
             let cs = mempty { inputs = inps, outputs = outs }
             let keyFrom = isOwned (getState cp) (xprv, pwdP)
             let rewardAcnt = getRawKey $ deriveRewardAccount @k pwdP xprv
-            (tx, sealedTx) <- withExceptT ErrSignPaymentMkTx $ ExceptT $ pure $
+            (tx, sealedTx, expiry) <- withExceptT ErrSignPaymentMkTx $ ExceptT $ pure $
                 mkStdTx tl (rewardAcnt, pwdP) keyFrom (nodeTip ^. #slotNo) cs
 
             (time, meta) <- liftIO $ mkTxMeta ti (currentTip cp) (getState cp) tx cs
@@ -1587,6 +1587,13 @@ signTx ctx wid pwd (UnsignedTx inpsNE outsNE) = db & \DBLayer{..} -> do
     nl = ctx ^. networkLayer @t
     inps = NE.toList inpsNE
     outs = NE.toList outsNE
+
+-- NOTE: The (+7200) was selected arbitrarily when we were trying to get
+-- this working on the FF testnet. Perhaps a better motivated and/or
+-- configurable value would be better.
+-- fixme: TTL in seconds
+defaultTTL :: Natural
+defaultTTL = 7200
 
 -- | Makes a fully-resolved coin selection for the given set of payments.
 selectCoinsExternal
@@ -1666,7 +1673,7 @@ signDelegation ctx wid argGenChange pwd coinSel action = db & \DBLayer{..} -> do
 
             let rewardAcnt = getRawKey $ deriveRewardAccount @k pwdP xprv
             let keyFrom = isOwned (getState cp) (xprv, pwdP)
-            (tx, sealedTx) <- withExceptT ErrSignDelegationMkTx $ ExceptT $ pure $
+            (tx, sealedTx, txExp) <- withExceptT ErrSignDelegationMkTx $ ExceptT $ pure $
                 case action of
                     RegisterKeyAndJoin poolId ->
                         mkDelegationJoinTx tl poolId
@@ -1690,7 +1697,7 @@ signDelegation ctx wid argGenChange pwd coinSel action = db & \DBLayer{..} -> do
                             coinSel'
 
             (time, meta) <- liftIO $
-                mkTxMeta ti (currentTip cp) s' tx coinSel'
+                mkTxMeta ti (currentTip cp) s' tx coinSel' txExp
             return (tx, meta, time, sealedTx)
   where
     ti :: TimeInterpreter IO
@@ -1699,8 +1706,8 @@ signDelegation ctx wid argGenChange pwd coinSel action = db & \DBLayer{..} -> do
     tl = ctx ^. transactionLayer @t @k
     nl = ctx ^. networkLayer @t
 
--- | Construct transaction metadata from a current block header and a list
--- of input and output.
+-- | Construct transaction metadata for a pending transaction from the block
+-- header of the current tip and a list of input and output.
 --
 -- FIXME: There's a logic duplication regarding the calculation of the transaction
 -- amount between right here, and the Primitive.Model (see prefilterBlocks).
@@ -1711,8 +1718,9 @@ mkTxMeta
     -> s
     -> Tx
     -> CoinSelection
+    -> SlotNo
     -> m (UTCTime, TxMeta)
-mkTxMeta interpretTime blockHeader wState tx cs =
+mkTxMeta interpretTime blockHeader wState tx cs expiry =
     let
         amtOuts =
             sum (mapMaybe ourCoins (outputs cs))
@@ -1731,7 +1739,7 @@ mkTxMeta interpretTime blockHeader wState tx cs =
                 , slotNo = blockHeader ^. #slotNo
                 , blockHeight = blockHeader ^. #blockHeight
                 , amount = Quantity $ distance amtInps amtOuts
-                , expiry = Just (error "fixme: expiry slot")
+                , expiry = Just expiry
                 }
             )
   where

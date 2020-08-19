@@ -170,18 +170,19 @@ mkTx
     => Cardano.NetworkId
     -> TxPayload Cardano.Shelley
     -> SlotNo
-    -- ^ Time to Live
+    -- ^ Tip of chain, for calculating TTL
     -> (XPrv, Passphrase "encryption")
     -- ^ Reward account
     -> (Address -> Maybe (k 'AddressK XPrv, Passphrase "encryption"))
     -> CoinSelection
-    -> Either ErrMkTx (Tx, SealedTx)
-mkTx networkId (TxPayload certs mkExtraWits) timeToLive (rewardAcnt, pwdAcnt) keyFrom cs = do
+    -> Either ErrMkTx (Tx, SealedTx, SlotNo)
+mkTx networkId (TxPayload certs mkExtraWits) tip (rewardAcnt, pwdAcnt) keyFrom cs = do
     let wdrls = mkWithdrawals
             networkId
             (toChimericAccountRaw . toXPub $ rewardAcnt)
             (withdrawal cs)
 
+    let timeToLive = defaultTTL tip
     let unsigned = mkUnsignedTx timeToLive cs wdrls certs
 
     wits <- case (txWitnessTagFor @k) of
@@ -203,8 +204,9 @@ mkTx networkId (TxPayload certs mkExtraWits) timeToLive (rewardAcnt, pwdAcnt) ke
                 pure $ mkByronWitness unsigned networkId addr (getRawKey k, pwd)
             pure $ bootstrapWits <> mkExtraWits unsigned
 
-    let tx = Cardano.makeSignedTransaction wits unsigned
-    return $ sealShelleyTx tx
+    let signed = Cardano.makeSignedTransaction wits unsigned
+    let (tx, sealed) = sealShelleyTx signed
+    return (tx, sealed, timeToLive)
 
 newTransactionLayer
     :: forall k t.
@@ -252,7 +254,7 @@ newTransactionLayer networkId = TransactionLayer
         -> CoinSelection
             -- ^ A balanced coin selection where all change addresses have been
             -- assigned.
-        -> Either ErrMkTx (Tx, SealedTx)
+        -> Either ErrMkTx (Tx, SealedTx, SlotNo)
     _mkDelegationJoinTx poolId acc@(accXPrv, pwd') keyFrom tip cs = do
         let accXPub = toXPub accXPrv
         let certs =
@@ -268,8 +270,7 @@ newTransactionLayer networkId = TransactionLayer
                 ]
 
         let payload = TxPayload certs mkWits
-        let ttl = defaultTTL tip
-        mkTx networkId payload ttl acc keyFrom cs
+        mkTx networkId payload tip acc keyFrom cs
 
     _mkDelegationQuitTx
         :: (XPrv, Passphrase "encryption")
@@ -281,7 +282,7 @@ newTransactionLayer networkId = TransactionLayer
         -> CoinSelection
             -- A balanced coin selection where all change addresses have been
             -- assigned.
-        -> Either ErrMkTx (Tx, SealedTx)
+        -> Either ErrMkTx (Tx, SealedTx, SlotNo)
     _mkDelegationQuitTx acc@(accXPrv, pwd') keyFrom tip cs = do
         let accXPub = toXPub accXPrv
         let certs = [toStakeKeyDeregCert accXPub]
@@ -290,8 +291,7 @@ newTransactionLayer networkId = TransactionLayer
                 ]
 
         let payload = TxPayload certs mkWits
-        let ttl = defaultTTL tip
-        mkTx networkId payload ttl acc keyFrom cs
+        mkTx networkId payload tip acc keyFrom cs
 
 _estimateMaxNumberOfInputs
     :: forall k. TxWitnessTagFor k

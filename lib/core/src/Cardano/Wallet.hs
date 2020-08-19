@@ -1534,10 +1534,10 @@ signPayment ctx wid argGenChange mkRewardAccount pwd cs = db & \DBLayer{..} -> d
 
             let keyFrom = isOwned (getState cp) (xprv, pwdP)
             let rewardAcnt = mkRewardAccount (xprv, pwdP)
-            (tx, sealedTx) <- withExceptT ErrSignPaymentMkTx $ ExceptT $ pure $
-                mkStdTx tl rewardAcnt keyFrom (nodeTip ^. #slotNo) cs'
+            (tx, sealedTx, txExp) <- withExceptT ErrSignPaymentMkTx $ ExceptT $
+                pure $ mkStdTx tl rewardAcnt keyFrom (nodeTip ^. #slotNo) cs'
 
-            (time, meta) <- liftIO $ mkTxMeta ti (currentTip cp) s' tx cs'
+            (time, meta) <- liftIO $ mkTxMeta ti (currentTip cp) s' tx cs' txExp
             return (tx, meta, time, sealedTx)
   where
     ti :: TimeInterpreter IO
@@ -1574,10 +1574,11 @@ signTx ctx wid pwd (UnsignedTx inpsNE outsNE) = db & \DBLayer{..} -> do
             let cs = mempty { inputs = inps, outputs = outs }
             let keyFrom = isOwned (getState cp) (xprv, pwdP)
             let rewardAcnt = getRawKey $ deriveRewardAccount @k pwdP xprv
-            (tx, sealedTx, expiry) <- withExceptT ErrSignPaymentMkTx $ ExceptT $ pure $
-                mkStdTx tl (rewardAcnt, pwdP) keyFrom (nodeTip ^. #slotNo) cs
+            (tx, sealedTx, txExp) <- withExceptT ErrSignPaymentMkTx $ ExceptT $
+                pure $ mkStdTx tl (rewardAcnt, pwdP) keyFrom (nodeTip ^. #slotNo) cs
 
-            (time, meta) <- liftIO $ mkTxMeta ti (currentTip cp) (getState cp) tx cs
+            (time, meta) <- liftIO $
+                mkTxMeta ti (currentTip cp) (getState cp) tx cs txExp
             return (tx, meta, time, sealedTx)
   where
     ti :: TimeInterpreter IO

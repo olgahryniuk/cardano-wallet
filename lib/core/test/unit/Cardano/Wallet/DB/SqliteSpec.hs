@@ -856,7 +856,7 @@ testTxs =
         [ (TxIn (mockHash @String "tx1") 0, Coin 1)]
         [ TxOut (Address "addr") (Coin 1) ]
         mempty
-      , TxMeta InLedger Incoming (SlotNo 140) (Quantity 0) (Quantity 1337144)
+      , TxMeta InLedger Incoming (SlotNo 140) (Quantity 0) (Quantity 1337144) Nothing
       )
     ]
 

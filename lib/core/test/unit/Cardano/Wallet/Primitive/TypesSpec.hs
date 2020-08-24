@@ -242,6 +242,7 @@ spec = do
                     , slotNo = SlotNo 1442
                     , blockHeight = Quantity 37
                     , amount = Quantity 1337
+                    , expiry = Just (SlotNo 2442)
                     }
             "-0.001337 pending since 1442#37" === pretty @_ @Text txMeta
         it "TxMeta (2)" $ do
@@ -251,6 +252,7 @@ spec = do
                     , slotNo = SlotNo 140
                     , blockHeight = Quantity 1
                     , amount = Quantity 13371442
+                    , expiry = Nothing
                     }
             "+13.371442 in ledger since 140#1" === pretty @_ @Text txMeta
 

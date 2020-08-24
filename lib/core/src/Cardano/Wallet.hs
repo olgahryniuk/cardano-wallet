@@ -828,7 +828,7 @@ restoreBlocks ctx wid blocks nodeTip = db & \DBLayer{..} -> mapExceptT atomicall
     let k = gp ^. #getEpochStability
     let localTip = currentTip $ NE.last cps
 
-    updatePendingTx (PrimaryKey wid) localTip
+    updatePendingTx (PrimaryKey wid) (view #slotNo localTip)
     putTxHistory (PrimaryKey wid) txs
     forM_ slotPoolDelegations $ \delegation@(slotNo, cert) -> do
         liftIO $ logDelegation delegation

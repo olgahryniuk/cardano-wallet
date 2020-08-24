@@ -162,6 +162,7 @@ import Test.QuickCheck
     , cover
     , elements
     , label
+    , liftArbitrary
     , oneof
     , property
     , scale
@@ -703,7 +704,7 @@ setupFixture (wid, wname, wstate) = do
 -- implements a fake signer that still produces sort of witnesses
 dummyTransactionLayer :: TransactionLayer DummyTarget JormungandrKey
 dummyTransactionLayer = TransactionLayer
-    { mkStdTx = \_ keyFrom _slot cs -> do
+    { mkStdTx = \_ keyFrom slot cs -> do
         let inps' = map (second coin) (CS.inputs cs)
         let tid = mkTxId inps' (CS.outputs cs) mempty
         let tx = Tx tid inps' (CS.outputs cs) mempty
@@ -716,7 +717,7 @@ dummyTransactionLayer = TransactionLayer
 
         -- (tx1, wit1) == (tx2, wit2) <==> fakebinary1 == fakebinary2
         let fakeBinary = SealedTx . B8.pack $ show (tx, wit)
-        return (tx, fakeBinary)
+        return (tx, fakeBinary, slot + 1)
     , initDelegationSelection =
         error "dummyTransactionLayer: initDelegationSelection not implemented"
     , mkDelegationJoinTx =
@@ -899,8 +900,9 @@ instance Arbitrary TxOut where
 instance Arbitrary TxMeta where
     shrink _ = []
     arbitrary = TxMeta
-        <$> elements [Pending, InLedger]
+        <$> elements [Pending, InLedger, Expired]
         <*> elements [Incoming, Outgoing]
         <*> genSlotNo
         <*> fmap Quantity arbitrary
         <*> fmap (Quantity . fromIntegral) (arbitrary @Word32)
+        <*> liftArbitrary genSlotNo

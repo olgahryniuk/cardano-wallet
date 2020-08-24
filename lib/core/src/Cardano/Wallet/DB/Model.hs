@@ -262,11 +262,12 @@ mListCheckpoints wid db@(Database wallets _) =
     tips = map currentTip . Map.elems . checkpoints
 
 mUpdatePendingTx :: Ord wid => wid -> SlotNo -> ModelOp wid s xprv ()
-mUpdatePendingTx wid tip = alterModel wid $ \wal ->
+mUpdatePendingTx wid currentTip = alterModel wid $ \wal ->
     ((), wal { txHistory = setExpired <$> txHistory wal })
   where
+    setExpired :: TxMeta -> TxMeta
     setExpired txMeta
-        | expiry txMeta >= Just tip = txMeta { status = Expired }
+        | expiry txMeta >= Just currentTip = txMeta { status = Expired }
         | otherwise = txMeta
 
 mRemovePendingTx :: Ord wid => wid -> (Hash "Tx") -> ModelOp wid s xprv ()

@@ -156,6 +156,7 @@ buildStep dryRun bk nightly = do
         run dryRun "stack" $ concat
             [ color "always"
             , [ "build" ]
+            , [ "--no-nix-pure" ]
             , [ "--bench" ]
             , [ "--no-run-benchmarks" ]
             , [ "--haddock" ]
@@ -169,6 +170,7 @@ buildStep dryRun bk nightly = do
         run dryRun "stack" $ concat
             [ color "always"
             , [ "test" ]
+            , [ "--no-nix-pure" ]
             , fast opt
             , case qaLevel nightly bk of
                 QuickTest -> skip "integration" <> skip "jormungandr-integration"

@@ -1,10 +1,5 @@
 resolver: https://raw.githubusercontent.com/input-output-hk/cardano-haskell/cfe917f0f419b5c9f63c958f335874e4dc0add85/snapshots/cardano-1.20.0.yaml
 
-nix:
-  # When the buildkite CI sets "STACK_IN_NIX_SHELL" we
-  # want the environment variables to be passed along.
-  pure: false
-
 packages:
 - lib/core
 - lib/core-integration
@@ -82,3 +77,6 @@ ghc-options: {"$locals": -ddump-to-file -ddump-hi}
 
 nix:
   shell-file: nix/stack-shell.nix
+  # Disabling the pure nix-shell allows environment variables to be
+  # passed down to tests. We need this for integration tests.
+  pure: false

@@ -87,7 +87,7 @@ import Network.HTTP.Client
     , responseTimeoutMicro
     )
 import System.Directory
-    ( makeAbsolute )
+    ( listDirectory, makeAbsolute )
 import System.Environment
     ( lookupEnv )
 import System.Exit
@@ -142,6 +142,16 @@ instance KnownCommand Shelley where
 main :: forall t n . (t ~ Shelley, n ~ 'Mainnet) => IO ()
 main = withUtf8Encoding $ withTracers $ \tracers -> do
     hSetBuffering stdout LineBuffering
+    putStrLn "--- TESTS_LOGDIR env:"
+    Just testLogDir <- testLogDirFromEnv
+    print testLogDir
+    _ <- putStrLn "---"
+
+
+    putStrLn "listDirectory $TESTS_LOGDIR:"
+    print =<< listDirectory testLogDir
+    putStrLn "---"
+
     hspec $ do
         describe "No backend required" $ do
             describe "Miscellaneous CLI tests" $ parallel (MiscellaneousCLI.spec @t)
@@ -167,6 +177,10 @@ main = withUtf8Encoding $ withTracers $ \tracers -> do
                 HWWalletsCLI.spec @n
                 PortCLI.spec @t
                 NetworkCLI.spec @t
+
+    putStrLn "listDirectory $TESTS_LOGDIR:"
+    print =<< listDirectory testLogDir
+    putStrLn "---"
 
 testPoolConfigs :: [PoolConfig]
 testPoolConfigs =

@@ -28,15 +28,21 @@
         depends = [
           (hsPkgs."base" or (errorHandler.buildDepError "base"))
           (hsPkgs."base58-bytestring" or (errorHandler.buildDepError "base58-bytestring"))
+          (hsPkgs."bech32" or (errorHandler.buildDepError "bech32"))
           (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
+          (hsPkgs."cardano-api" or (errorHandler.buildDepError "cardano-api"))
           (hsPkgs."cardano-binary" or (errorHandler.buildDepError "cardano-binary"))
           (hsPkgs."cardano-crypto" or (errorHandler.buildDepError "cardano-crypto"))
+          (hsPkgs."cardano-crypto-class" or (errorHandler.buildDepError "cardano-crypto-class"))
           (hsPkgs."cardano-crypto-wrapper" or (errorHandler.buildDepError "cardano-crypto-wrapper"))
           (hsPkgs."cardano-ledger" or (errorHandler.buildDepError "cardano-ledger"))
+          (hsPkgs."cardano-slotting" or (errorHandler.buildDepError "cardano-slotting"))
           (hsPkgs."cborg" or (errorHandler.buildDepError "cborg"))
           (hsPkgs."cryptonite" or (errorHandler.buildDepError "cryptonite"))
           (hsPkgs."extra" or (errorHandler.buildDepError "extra"))
           (hsPkgs."memory" or (errorHandler.buildDepError "memory"))
+          (hsPkgs."ouroboros-consensus-shelley" or (errorHandler.buildDepError "ouroboros-consensus-shelley"))
+          (hsPkgs."shelley-spec-ledger" or (errorHandler.buildDepError "shelley-spec-ledger"))
           (hsPkgs."text" or (errorHandler.buildDepError "text"))
           ];
         buildable = true;
@@ -82,7 +88,7 @@
     } // {
     src = (pkgs.lib).mkDefault (pkgs.fetchgit {
       url = "https://github.com/input-output-hk/cardano-transactions";
-      rev = "a68107c1682c3fd119c7e83f5adcbba2c37e1744";
-      sha256 = "17xlwawlm5in1ivqq5dm6pw31mcafh8kfllxy7rfr1gdbck5qdry";
+      rev = "db40318bbccbfb40b15e541433402fd81a1ec4e5";
+      sha256 = "0lpy53lzw9b2qi02ybzsnddpcf16zvwd0whl0yihsgp8c7mhp0w8";
       });
     }) // { cabal-generator = "hpack"; }

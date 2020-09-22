@@ -88,6 +88,8 @@ import Data.Foldable
     ( fold )
 import Data.Function
     ( (&) )
+import Data.Functor
+    ( (<&>) )
 import Data.Functor.Const
     ( Const (..) )
 import Data.Functor.Identity
@@ -96,6 +98,8 @@ import Data.Generics.Internal.VL.Lens
     ( over, view )
 import Data.Map.Strict
     ( Map )
+import Data.Maybe
+    ( catMaybes )
 import Data.Ord
     ( Down (..) )
 import Data.Quantity
@@ -396,6 +400,16 @@ mRollbackTo ti point = do
 
 mRemovePools :: [PoolId] -> ModelOp ()
 mRemovePools poolsToRemove = do
+    registrations <- get #registrations
+    let metadataHashes = registrations
+            & Map.filterWithKey (\(_, k) _ -> k `Set.member` poolsToRemoveSet)
+            & Map.elems
+            & fmap (view #poolMetadata)
+            & catMaybes
+            & fmap snd
+            & Set.fromList
+    modify #metadata
+        $ flip Map.withoutKeys metadataHashes
     modify #distributions
         $ Map.map $ L.filter $ \(p, _) -> retain p
     modify #pools

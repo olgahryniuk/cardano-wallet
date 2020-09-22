@@ -89,6 +89,8 @@ import Data.List
     ( foldl' )
 import Data.Map.Strict
     ( Map )
+import Data.Maybe
+    ( catMaybes )
 import Data.Quantity
     ( Percentage (..), Quantity (..) )
 import Data.Ratio
@@ -447,6 +449,15 @@ newDBLayer trace fp timeInterpreter = do
 
         removePools = mapM_ $ \pool -> do
             liftIO $ traceWith trace $ MsgRemovingPool pool
+            -- Remove all metadata associated with the pool, bearing in mind
+            -- that a single pool can have several historical metadata hashes
+            -- associated with it:
+            metadataHashes <-
+                catMaybes . fmap (poolRegistrationMetadataHash . entityVal) <$>
+                selectList [ PoolRegistrationPoolId ==. pool ] []
+            forM_ metadataHashes $ \metadataHash ->
+                deleteWhere [ PoolMetadataHash ==. metadataHash ]
+            -- Remove all other rows directly associated with the pool.
             deleteWhere [ PoolProductionPoolId ==. pool ]
             deleteWhere [ PoolOwnerPoolId ==. pool ]
             deleteWhere [ PoolRegistrationPoolId ==. pool ]
